@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ضبط و تغییر صدا پیشرفته</title>
+    <!-- استفاده از فونت وزیرمتن و Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        /* استایل سفارشی برای Wave visualizer */
+        .visualizer-bar {
+            transition: height 0.05s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+    <!-- کانتینر اصلی -->
+    <div class="max-w-4xl mx-auto w-full bg-slate-800 border border-slate-700 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- عنوان اصلی -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-500 mb-2">
+                ضبط و افکت‌گذار پیشرفته صدا 🎙️
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base">صدای خود را ضبط کنید، افکت‌های جالب روی آن بگذارید و دانلود کنید!</p>
+        </header>
+
+        <!-- بخش تصویرسازی فرکانس و تایمر -->
+        <div class="bg-slate-950 rounded-2xl p-6 mb-8 border border-slate-800 text-center relative shadow-inner">
+            <div id="statusBadge" class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 mb-4">
+                آماده ضبط
+            </div>
+            
+            <!-- نمایش تایمر -->
+            <div id="timer" class="text-4xl md:text-5xl font-mono font-bold tracking-widest text-teal-400 mb-4">
+                00:00
+            </div>
+
+            <!-- بوم رسم فرم موج صدا (Visualizer) -->
+            <canvas id="visualizer" class="w-full h-24 bg-slate-900/50 rounded-xl border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- دکمه‌های کنترل ضبط -->
+        <div class="flex flex-wrap justify-center items-center gap-4 mb-8">
+            <button id="recordBtn" class="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-rose-900/40 transition-all hover:scale-105 active:scale-95">
+                <svg id="micIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0 A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd"/>
+                </svg>
+                <span id="recordBtnText">شروع ضبط</span>
+            </button>
+
+            <button id="stopBtn" disabled class="flex items-center gap-2 bg-slate-700 text-slate-500 font-bold py-3 px-8 rounded-full shadow cursor-not-allowed transition-all">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"/>
+                </svg>
+                <span>توقف</span>
+            </button>
+
+            <!-- دکمه جدید آپلود فایل -->
+            <label class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12"/>
+                </svg>
+                <span>آپلود فایل صوتی</span>
+                <input type="file" id="audioFileInput" accept="audio/*" class="hidden">
+            </label>
+        </div>
+
+        <!-- انتخاب افکت‌ها -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-slate-200 mb-4 flex items-center gap-2">
+                <span>✨ انتخاب افکت صدا:</span>
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <button data-effect="normal" class="effect-btn active bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl font-semibold border border-indigo-400/30 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🎙️</span>
+                    <span>عادی (اصلی)</span>
+                </button>
+                <button data-effect="male" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🧔</span>
+                    <span>صدای مرد (بم)</span>
+                </button>
+                <button data-effect="female" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">👩</span>
+                    <span>صدای زن (زیر)</span>
+                </button>
+                <button data-effect="child" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">👶</span>
+                    <span>صدای کودک / سنجاب</span>
+                </button>
+                <button data-effect="robot" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🤖</span>
+                    <span>ربات فلزی</span>
+                </button>
+                <button data-effect="fan" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🚁</span>
+                    <span>جلوی پنکه / لرزان</span>
+                </button>
+                <button data-effect="echo" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🏔️</span>
+                    <span>اکو / پژواک</span>
+                </button>
+                <button data-effect="cave" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">🏰</span>
+                    <span>تونل / غار بزرگ</span>
+                </button>
+                <!-- افکت‌های جدید -->
+                <button data-effect="alien" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">👽</span>
+                    <span>موجود فضایی</span>
+                </button>
+                <button data-effect="retro" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">👾</span>
+                    <span>بازی 8-Bit</span>
+                </button>
+                <button data-effect="telephone" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">📞</span>
+                    <span>تلفن قدیمی / بی‌پیمان</span>
+                </button>
+                <button data-effect="submerged" class="effect-btn bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-xl font-semibold border border-slate-600 transition-all text-sm flex flex-col items-center gap-1">
+                    <span class="text-xl">📻</span>
+                    <span>زیر آب / اعماق</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- تنظیمات دستی افکت (اسلایدرها) -->
+        <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 mb-8 space-y-4">
+            <h3 class="text-sm font-bold text-slate-400 mb-2">تنظیمات پیشرفته گام و سرعت:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                        <span>گام صدا (Pitch / Speed):</span>
+                        <span id="pitchValue" class="text-teal-400 font-bold">1.0x</span>
+                    </div>
+                    <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.05" value="1.0" class="w-full accent-teal-500 bg-slate-800 rounded-lg cursor-pointer">
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                        <span>سرعت لرزش (Tremolo):</span>
+                        <span id="fanSpeedValue" class="text-teal-400 font-bold">0 Hz</span>
+                    </div>
+                    <input type="range" id="fanSlider" min="0" max="25" step="1" value="0" class="w-full accent-teal-500 bg-slate-800 rounded-lg cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <!-- پخش‌کننده و دانلود -->
+        <div id="playerSection" class="hidden bg-slate-900 border border-teal-500/30 p-6 rounded-2xl text-center space-y-4">
+            <h3 class="text-lg font-bold text-teal-300">خروجی صدای پردازش شده:</h3>
+            
+            <audio id="audioPlayer" controls class="w-full rounded-lg"></audio>
+
+            <div class="flex justify-center gap-4 pt-2">
+                <button id="downloadBtn" class="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>دانلود فایل صوتی</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- فوتر -->
+    <footer class="text-center text-slate-500 text-xs mt-6">
+        طراحی شده با Web Audio API و HTML5
+    </footer>
+
+    <!-- کدهای JavaScript -->
+    <script>
+        // متغیرهای اصلی برنامه
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext;
+        let originalAudioBuffer = null;
+        let processedAudioBlob = null;
+        let isRecording = false;
+        let timerInterval = null;
+        let recordStartTime;
+
+        // عناصر HTML
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const recordBtnText = document.getElementById('recordBtnText');
+        const statusBadge = document.getElementById('statusBadge');
+        const timerDisplay = document.getElementById('timer');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playerSection = document.getElementById('playerSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const effectBtns = document.querySelectorAll('.effect-btn');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const pitchValue = document.getElementById('pitchValue');
+        const fanSlider = document.getElementById('fanSlider');
+        const fanSpeedValue = document.getElementById('fanSpeedValue');
+        const audioFileInput = document.getElementById('audioFileInput');
+
+        // پردازش فایل آپلود شده
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                statusBadge.innerText = 'در حال بارگذاری فایل...';
+                statusBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 mb-4';
+
+                const arrayBuffer = await file.arrayBuffer();
+                originalAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                statusBadge.innerText = 'فایل بارگذاری شد!';
+                statusBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 mb-4';
+
+                // نمایش زمان فایل آپلود شده
+                const durationMins = String(Math.floor(originalAudioBuffer.duration / 60)).padStart(2, '0');
+                const durationSecs = String(Math.floor(originalAudioBuffer.duration % 60)).padStart(2, '0');
+                timerDisplay.innerText = `${durationMins}:${durationSecs}`;
+
+                applyEffectsAndProcess();
+                playerSection.classList.remove('hidden');
+            } catch (err) {
+                alert('خطا در بارگذاری فایل صوتی! فرمت فایل را بررسی کنید.');
+                statusBadge.innerText = 'خطا در آپلود';
+                statusBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 mb-4';
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            }
+        });
+
+        function startRecording(stream) {
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            
+            // تحلیل‌گر صوتی برای رسم Waveform
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 64;
+            source.connect(analyser);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                originalAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // بستن استریم میکروفون
+                stream.getTracks().forEach(track => track.stop());
+                
+                // اعمال افکت و آماده‌سازی پخش
+                applyEffectsAndProcess();
+                playerSection.classList.remove('hidden');
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            // بروزرسانی UI
+            recordBtn.disabled = true;
+            recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = false;
+            stopBtn.classList.remove('slate-700', 'text-slate-500', 'cursor-not-allowed');
+            stopBtn.classList.add('bg-amber-600', 'hover:bg-amber-500', 'text-white');
+            statusBadge.innerText = 'در حال ضبط...';
+            statusBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 animate-pulse mb-4';
+
+            // شروع تایمر
+            recordStartTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+
+            // شروع رسم ویژوالایزر
+            drawVisualizer(analyser);
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            isRecording = false;
+
+            // بروزرسانی UI
+            recordBtn.disabled = false;
+            recordBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = true;
+            stopBtn.className = 'flex items-center gap-2 bg-slate-700 text-slate-500 font-bold py-3 px-8 rounded-full shadow cursor-not-allowed transition-all';
+            
+            statusBadge.innerText = 'ضبط کامل شد!';
+            statusBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 mb-4';
+            
+            clearInterval(timerInterval);
+        }
+
+        // تایمر
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+            const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const secs = String(elapsed % 60).padStart(2, '0');
+            timerDisplay.innerText = `${mins}:${secs}`;
+        }
+
+        // رسم نمودار شکل موج
+        function drawVisualizer(analyser) {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function renderFrame() {
+                if (!isRecording) {
+                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                requestAnimationFrame(renderFrame);
+
+                analyser.getByteFrequencyData(dataArray);
+
+                canvasCtx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 2;
+                let barHeight;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = (dataArray[i] / 255) * canvas.height;
+
+                    // ایجاد رنگ گراپینتی زیبا
+                    const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+                    gradient.addColorStop(0, '#14b8a6');
+                    gradient.addColorStop(1, '#f43f5e');
+
+                    canvasCtx.fillStyle = gradient;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+                    x += barWidth;
+                }
+            }
+            renderFrame();
+        }
+
+        // تغییر افکت صوتی
+        effectBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                effectBtns.forEach(b => {
+                    b.classList.remove('active', 'bg-indigo-600', 'border-indigo-400/30');
+                    b.classList.add('bg-slate-700', 'border-slate-600');
+                });
+                btn.classList.add('active', 'bg-indigo-600', 'border-indigo-400/30');
+                btn.classList.remove('bg-slate-700', 'border-slate-600');
+
+                currentEffect = btn.dataset.effect;
+                
+                // تنظیم مقادیر اسلایدر بر اساس افکت
+                adjustSlidersForEffect(currentEffect);
+
+                if (originalAudioBuffer) {
+                    applyEffectsAndProcess();
+                }
+            });
+        });
+
+        function adjustSlidersForEffect(effect) {
+            switch(effect) {
+                case 'male':
+                    pitchSlider.value = 0.75;
+                    fanSlider.value = 0;
+                    break;
+                case 'female':
+                    pitchSlider.value = 1.35;
+                    fanSlider.value = 0;
+                    break;
+                case 'child':
+                    pitchSlider.value = 1.65;
+                    fanSlider.value = 0;
+                    break;
+                case 'fan':
+                    pitchSlider.value = 1.0;
+                    fanSlider.value = 12;
+                    break;
+                case 'alien':
+                    pitchSlider.value = 1.4;
+                    fanSlider.value = 18;
+                    break;
+                case 'retro':
+                    pitchSlider.value = 1.1;
+                    fanSlider.value = 0;
+                    break;
+                case 'telephone':
+                    pitchSlider.value = 1.0;
+                    fanSlider.value = 0;
+                    break;
+                case 'submerged':
+                    pitchSlider.value = 0.8;
+                    fanSlider.value = 0;
+                    break;
+                default:
+                    pitchSlider.value = 1.0;
+                    fanSlider.value = 0;
+                    break;
+            }
+            pitchValue.innerText = `${pitchSlider.value}x`;
+            fanSpeedValue.innerText = `${fanSlider.value} Hz`;
+        }
+
+        // اسلایدر گام
+        pitchSlider.addEventListener('input', (e) => {
+            pitchValue.innerText = `${e.target.value}x`;
+            if (originalAudioBuffer) applyEffectsAndProcess();
+        });
+
+        // اسلایدر پنکه
+        fanSlider.addEventListener('input', (e) => {
+            fanSpeedValue.innerText = `${e.target.value} Hz`;
+            if (originalAudioBuffer) applyEffectsAndProcess();
+        });
+
+        // اعمال افکت‌ها و رندر صدا با OfflineAudioContext
+        async function applyEffectsAndProcess() {
+            if (!originalAudioBuffer) return;
+
+            const pitchRate = parseFloat(pitchSlider.value);
+            const fanSpeed = parseFloat(fanSlider.value);
+
+            // محاسبه زمان با توجه به تغییر pitch
+            const duration = originalAudioBuffer.duration / pitchRate;
+            
+            // Offline Context برای رندر آفلاین سریع‌تر از زمان واقعی
+            const offlineCtx = new OfflineAudioContext(
+                originalAudioBuffer.numberOfChannels,
+                Math.ceil(originalAudioBuffer.sampleRate * duration),
+                originalAudioBuffer.sampleRate
+            );
+
+            // منبع صدا
+            const source = offlineCtx.createBufferSource();
+            source.buffer = originalAudioBuffer;
+            source.playbackRate.value = pitchRate;
+
+            let lastNode = source;
+
+            // ۱. افکت پنکه (Tremolo / Modulation)
+            if (fanSpeed > 0 || currentEffect === 'fan') {
+                const gainNode = offlineCtx.createGain();
+                const oscillator = offlineCtx.createOscillator();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = fanSpeed > 0 ? fanSpeed : 12; // فرکانس لرزش
+                
+                const modulationGain = offlineCtx.createGain();
+                modulationGain.gain.value = 0.6; // شدت لرزش صدا
+
+                oscillator.connect(modulationGain);
+                modulationGain.connect(gainNode.gain);
+                oscillator.start();
+
+                lastNode.connect(gainNode);
+                lastNode = gainNode;
+            }
+
+            // ۲. افکت ربات (Ring Modulation & Filter)
+            if (currentEffect === 'robot') {
+                const osc = offlineCtx.createOscillator();
+                const oscGain = offlineCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.value = 50; // فرکانس فلزی
+
+                const filter = offlineCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1000;
+
+                lastNode.connect(filter);
+                filter.connect(offlineCtx.destination);
+                osc.start();
+                lastNode = filter;
+            }
+
+            // ۳. افکت اکو (Echo)
+            if (currentEffect === 'echo') {
+                const delay = offlineCtx.createDelay();
+                delay.delayTime.value = 0.3; // 300ms تأخیر
+
+                const feedback = offlineCtx.createGain();
+                feedback.gain.value = 0.4; // برگشت صدا
+
+                lastNode.connect(delay);
+                delay.connect(feedback);
+                feedback.connect(delay);
+                delay.connect(offlineCtx.destination);
+            }
+
+            // ۴. افکت غار / تونل (Reverb simulation)
+            if (currentEffect === 'cave') {
+                const delay1 = offlineCtx.createDelay();
+                delay1.delayTime.value = 0.15;
+                const delay2 = offlineCtx.createDelay();
+                delay2.delayTime.value = 0.35;
+
+                const feedback = offlineCtx.createGain();
+                feedback.gain.value = 0.5;
+
+                lastNode.connect(delay1);
+                lastNode.connect(delay2);
+                delay1.connect(feedback);
+                delay2.connect(feedback);
+                feedback.connect(delay1);
+                
+                delay1.connect(offlineCtx.destination);
+                delay2.connect(offlineCtx.destination);
+            }
+
+            // ۵. افکت فضایی (Alien)
+            if (currentEffect === 'alien') {
+                const osc = offlineCtx.createOscillator();
+                const oscGain = offlineCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 440; // فرکانس رینگی فضایی
+
+                const gainNode = offlineCtx.createGain();
+                osc.connect(gainNode.gain);
+                osc.start();
+
+                lastNode.connect(gainNode);
+                lastNode = gainNode;
+            }
+
+            // ۶. افکت تلفن قدیمی (Telephone)
+            if (currentEffect === 'telephone') {
+                const lowpass = offlineCtx.createBiquadFilter();
+                lowpass.type = 'lowpass';
+                lowpass.frequency.value = 3000;
+
+                const highpass = offlineCtx.createBiquadFilter();
+                highpass.type = 'highpass';
+                highpass.frequency.value = 400;
+
+                lastNode.connect(lowpass);
+                lowpass.connect(highpass);
+                lastNode = highpass;
+            }
+
+            // ۷. افکت زیر آب (Submerged)
+            if (currentEffect === 'submerged') {
+                const filter = offlineCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 350; // فیلتر شدید فرکانس بالا
+                filter.Q.value = 5;
+
+                lastNode.connect(filter);
+                lastNode = filter;
+            }
+
+            // ۸. افکت 8-Bit / بازی قدیمی (Retro)
+            if (currentEffect === 'retro') {
+                const filter = offlineCtx.createBiquadFilter();
+                filter.type = 'peaking';
+                filter.frequency.value = 1200;
+                filter.gain.value = 15;
+
+                const osc = offlineCtx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.value = 20;
+
+                const gainNode = offlineCtx.createGain();
+                gainNode.gain.value = 0.8;
+
+                lastNode.connect(filter);
+                filter.connect(gainNode);
+                lastNode = gainNode;
+            }
+
+            // اتصال گره نهایی به خروجی
+            lastNode.connect(offlineCtx.destination);
+
+            // شروع رندر
+            source.start(0);
+            const renderedBuffer = await offlineCtx.startRendering();
+
+            // تبدیل Buffer رندر شده به Blob و فایل صوتی قابل پخش/دانلود
+            processedAudioBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+            const audioUrl = URL.createObjectURL(processedAudioBlob);
+            
+            audioPlayer.src = audioUrl;
+        }
+
+        // دکمه دانلود
+        downloadBtn.addEventListener('click', () => {
+            if (!processedAudioBlob) return;
+            const url = URL.createObjectURL(processedAudioBlob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `voice_effect_${currentEffect}_${Date.now()}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        });
+
+        // تابع کمکی برای تبدیل AudioBuffer به فرمت WAV (جهت دانلود)
+        function bufferToWave(abuffer, len) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = len * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample,
+                offset = 0,
+                pos = 0;
+
+            function setUint16(data) {
+                view.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                view.setUint32(pos, data, true);
+                pos += 4;
+            }
+
+            // ساخت هدر WAV
+            setUint32(0x46464952);                         // "RIFF"
+            setUint32(length - 8);                         // file length - 8
+            setUint32(0x45564157);                         // "WAVE"
+            setUint32(0x20746d66);                         // "fmt " chunk
+            setUint32(16);                                 // length = 16
+            setUint16(1);                                  // PCM (uncompressed)
+            setUint16(numOfChan);
+            setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+            setUint16(numOfChan * 2);                      // block-align
+            setUint16(16);                                 // 16-bit
+            setUint32(0x61746164);                         // "data" chunk
+            setUint32(length - pos - 4);                   // chunk length
+
+            for (i = 0; i < abuffer.numberOfChannels; i++)
+                channels.push(abuffer.getChannelData(i));
+
+            while (pos < length) {
+                for (i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([buffer], { type: "audio/wav" });
+        }
+    </script>
+</body>
+</html>
